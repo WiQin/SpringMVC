@@ -10,6 +10,26 @@
         http://www.springframework.org/schema/context
 		http://www.springframework.org/schema/context/spring-context-3.2.xsd">
 
+    <!--拦截器-->
+    <bean name="inter1" class="com.wyw.web.interceptor.MyHandlerInterceptor1"></bean>
+    <bean name="inter2" class="com.wyw.web.interceptor.MyHandlerInterceptor2"></bean>
+
+    <mvc:interceptors>
+        <bean class="com.wyw.web.interceptor.MyHandlerInterceptor3"></bean>
+        <bean class="com.wyw.web.interceptor.MyHandlerInterceptor4"></bean>
+        <bean class="com.wyw.web.interceptor.LoginInterceptor"></bean>
+
+        <mvc:interceptor>
+            <mvc:mapping path="/*"/>
+            <mvc:exclude-mapping path="/write"/>
+            <ref bean="inter1"/>
+        </mvc:interceptor>
+        <mvc:interceptor>
+            <mvc:mapping path="/**"/>
+            <ref bean="inter2"/>
+        </mvc:interceptor>
+    </mvc:interceptors>
+
 
     <!--<mvc:resources mapping="/images/**" location="/images/"/>
     <mvc:resources mapping="/js/**" location="/js/"/>
@@ -18,11 +38,22 @@
     <mvc:default-servlet-handler/>
 
     <!--配置映射器，哪条请求匹配哪个控制器-->
-    <bean class="org.springframework.web.servlet.handler.BeanNameUrlHandlerMapping"/>
+    <bean class="org.springframework.web.servlet.handler.BeanNameUrlHandlerMapping">
+        <!--&lt;!&ndash;注入拦截器&ndash;&gt;
+        <property name="interceptors" >
+            <list>
+                <ref bean="inter1"></ref>
+                <ref bean="inter2"></ref>
+            </list>
+        </property>-->
+    </bean>
 
 
     <!--配置适配器，可配置多个-->
     <bean class="org.springframework.web.servlet.mvc.SimpleControllerHandlerAdapter"/>
+
+    <!--自定义适配器-->
+    <bean class="com.wyw.web.adapter.MyHandlerAdapter"/>
 
     <!--配置视图解析器-->
     <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
@@ -34,5 +65,23 @@
     <!--配置控制器-->
     <bean name="/hello.action" class="com.wyw.web.controller.HelloController"></bean>
 
+    <!--继承自AbstractController的处理器-->
+    <bean name="/test" class="com.wyw.web.controller.TestController">
+        <!--设置线程同步-->
+        <property name="synchronizeOnSession" value="true"></property>
+        <!--强制请求方法类型-->
+        <property name="supportedMethods" value="POST,GET"></property>
+        <!--session前置条件检查-->
+        <property name="requireSession" value="true"/>
+    </bean>
+
+    <bean name="/write" class="com.wyw.web.controller.TestController2">
+    </bean>
+
+    <bean name="my/mytest" class="com.wyw.web.adapter.MyControllertest">
+    </bean>
+
+    <bean name="/login" class="com.wyw.web.controller.LoginController">
+    </bean>
 
 </beans>

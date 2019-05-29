@@ -1,0 +1,1055 @@
+三层架构：
+spring
+
+dao:mybatis
+spring_dao.xml:dao层接口的实现类对象
+
+servlct
+spring+service.xml：service层实现类的代理，添加事务管理
+
+web:springmvc
+
+1.Web、MVC、WebMVC概述
+	1)完成一次web请求的过程
+		Web浏览器发起请求
+		Web服务器接收请求并处理请求,最后产生响应(一般为html)。
+		web服务器处理完成后,返回内容给web客户端,客户端对接收的内容进行处理并显示出来。
+
+		从这里可以看出,在web中,都是web客户端发起请求,web服务器接收处理请求并产生响应。
+		一般Web服务器是不能主动通知Web客户端更新内容。虽然有些技术可以帮我们实现这样的效果,如服务器推技术（Comet）、还有HTML5中的websocket等。
+
+	2)MVC模型(Model-View-Controller)
+		是一种架构型的模式,本身不引入新功能,只是帮助我们将开发的代码结构,组织的更加合理。
+
+		Model(模型)
+			数据模型,提供要展示的数据,因此包含数据和行为,行为是用来处理这些数据的。不过现在一般都分离开来:Value Object（数据） 和 服务层（行为）。也就是数据由实体类或者javabean来提供,行为由service层来提供.
+
+		View(视图)
+			负责进行模型的展示,一般就是我们见到的用户界面,客户想看到的东西。
+
+		Controller(控制器)
+			接收用户请求,委托给模型进行处理,处理完毕后把返回的模型数据交给给视图。也就是说控制器在中间起到一个调度的作用。
+
+
+		注意:在标准的MVC中,模型能主动推数据给视图进行更新(可以采用观察者设计模式实现,在模型上注册视图,当模型更新时自动更新视图),但在Web开发中模型是无法主动推给视图,即无法主动更新用户界面,因为在Web的访问是请求-响应的模式。必须由客户端主动发出请求后,服务器才能把数据返回。
+
+
+
+	3)WebMVC
+		Web中MVC里面的模型-视图-控制器的概念和标准MVC概念一样,但是在Web MVC模式下,模型无法【主动】推数据给视图,如果用户想要视图更新,需要再发送一次请求(即请求-响应模型)。
+
+		在我们之前的学习中,其实就是把Servlet作为Controller(控制器),把jsp作为View(视图),把javabean作为Model(模型)中的数据,service层作为Model(模型)中的行为.
+
+		注意:MVC和三层架构的区别
+
+
+
+2.SpringWebMVC概述(SpringMVC)
+	1)SpringWebMVC简称SpringMVC
+		SpringMVC就是Spring框架提供的一个模块,通过实现MVC模式来很好地将数据、业务与展现进行分离,SpringMVC框架的目的是要简化我们日常的Web开发。
+
+		SpringMVC框架跟其他的WebMVC框架一样,都是*请求驱动*,并且设计围绕一个能够分发请求到控制器以及提供其他加快web应用开发功能的核心Servlet(叫做DispatcherServlet,即前端控制器)。Spring的DispatcherServlet实现比其他框架中还要多的功能。它和spring的ioc容器完全整合,并且允许使用spring中其他的所有功能。
+
+		SpringMVC框架设计的一个核心的原则就是"开闭原则",对扩展开放,对修改关闭.所以SpringMVC框架中很多方法都是final的,不允许用户随意覆盖,但是却提供给用户很多可扩展的机制。SpringMVC目前已经成为非常流行的web应用的框架。
+
+
+	2)SpringMVC框架的获取
+		由于SpringMVC是Spring框架中的一个模块,所以我们下载Spring框架即可,因为里面包含了Spring框架的各个模块的相关东西,当然也包含了SpringMVC的.(jar包、API文档、源代码)
+
+		spring-aop-3.2.4.RELEASE.jar
+		spring-aspects-3.2.4.RELEASE.jar
+		spring-beans-3.2.4.RELEASE.jar
+		spring-context-3.2.4.RELEASE.jar
+		spring-context-support-3.2.4.RELEASE.jar
+		spring-core-3.2.4.RELEASE.jar
+		spring-expression-3.2.4.RELEASE.jar
+		spring-instrument-3.2.4.RELEASE.jar
+		spring-instrument-tomcat-3.2.4.RELEASE.jar
+		spring-jdbc-3.2.4.RELEASE.jar
+		spring-jms-3.2.4.RELEASE.jar
+		spring-orm-3.2.4.RELEASE.jar
+		spring-oxm-3.2.4.RELEASE.jar
+		spring-struts-3.2.4.RELEASE.jar
+		spring-test-3.2.4.RELEASE.jar
+		spring-tx-3.2.4.RELEASE.jar
+		spring-web-3.2.4.RELEASE.jar
+		spring-webmvc-3.2.4.RELEASE.jar
+		spring-webmvc-portlet-3.2.4.RELEASE.jar
+
+	3)SpringMVC框架的核心组件
+		1.DispatcherServlet: 前端控制器,用来过滤客户端发送过来,想要进行逻辑处理的请求。
+
+		2.Controller/Headler: 控制器/处理器。开发人员自定义,用来处理用户请求的,并且处理完成之后返回给用户指定视图的对象。
+
+		3.HandlerMapping: 处理器映射器。DispatcherServlet接收到客户端请求的URL之后,根据一定的匹配规则,再把请求转发给对应的Handler,这个匹配规则由HandlerMapping决定。
+
+		4.HandlerAdaptor:处理器适配器。处理器适配器用来适配每一个要执行的Handler对象。通过HandlerAdapter可以支持任意的类作为处理器
+
+		5.ViewResolver:视图解析器。Handler返回的是逻辑视图名,需要有一个解析器能够将逻辑视图名转换成实际的物理视图。而且Spring的可扩展性决定了视图可以由很多种,所以需要不同的视图解析器,解析不同的视图。但是一般由jsp充当视图的情况居多
+
+
+		SpringMVC框架提供一个核心的Servlet对象(DispatcherServlet,前端控制器)来对服务器接收到的请求进行解析,当这个请求被DispatcherServlet获取到之后,DispatherServlet需要根据HandlerMapping对象的映射关系,将这个请求转交给真正能够处理客户端请求的Controller控制器(我们要写的就是这个东西,相当于之前的servlet)来处理。Controller处理完成后返回ModelAndView对象,也就是模型和视图的结合体。ViewResolver视图解析器根据ModelAndView中的逻辑视图名找到真正的物理视图,同时使用ModelAndView中模型里面的数据对视图进行渲染。最后把准备好的视图展现给用户
+
+
+
+3.SpringMVC框架在项目中的搭建
+	第一步：构建Web项目
+	第二步：导入所需jar包
+	第三步：配置前端控制器DispatcherServlet
+	第四步：编写Controller控制器(也称为Handler处理器)
+	第五步：配置处理器映射器(可省去,有默认配置)
+	第六步：配置处理器适配器(可省去,有默认配置)
+	第七步：配置视图解析器(可省去,有默认配置,但是前缀和后缀都为"")
+	第八步：配置控制器/处理器
+
+	1)构建Web项目
+		在自己Eclipse中创建一个动态web项目(DynamicWebProject),注意JDK版本和项目版本的选择
+
+
+	2)导入所需的jar包
+		在lib目录下放入如下jar包,这是初始jar包,根据后续需求会陆续加入jar包
+		commons-logging-1.2.jar
+		spring-beans-3.2.4.RELEASE.jar
+		spring-context-3.2.4.RELEASE.jar
+		spring-core-3.2.4.RELEASE.jar
+		spring-expression-3.2.4.RELEASE.jar
+		spring-web-3.2.4.RELEASE.jar
+		spring-webmvc-3.2.4.RELEASE.jar
+
+
+	3)配置前端控制器DispatcherServlet
+
+		SpringMVC的核心控制器就是一个Servlet对象,继承自HttpServlet,所以需要在web.xml文件中配置。
+
+		SpringMVC是Spring提供的一个模块,Spring所有的模块都是基于Spring IOC功能的。所以SpringMVC的DispatcherServlet对象在初始化之前也会去实例化Spring的容器对象（ApplicationContext）,那么就需要读取Spring的配置文件。默认SpringMVC会在你web应用的WEB-INF目录下查找一个名字为[servlet-name]-servlet.xml文件,并且创建在这个文件中定义的bean对象。如果你提供的spring配置文件的名字或者位置和默认的不同,那么需要在配置servlet时同时指定配置文件的位置。
+
+		例如:
+		  <servlet>
+			<servlet-name>SpringMVC</servlet-name>
+			<servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+			<load-on-startup>1</load-on-startup>
+		  </servlet>
+		  <servlet-mapping>
+			<servlet-name>SpringMVC</servlet-name>
+			<url-pattern>*.action</url-pattern>
+		  </servlet-mapping>
+
+		如上配置,框架会自动去当前应用的WEB-INF目录下查找名字为SpringMVC-servlet.xml文件(默认前缀和<servlet-name>标签中的值一致)。
+		也可以自己指定配置文件的名字和位置:
+
+		<servlet>
+			<servlet-name>SpringMVC</servlet-name>
+			<servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+			<init-param>
+				<param-name>contextConfigLocation</param-name>
+				<param-value>classpath:spring-web-mvc.xml</param-value>
+			</init-param>
+			<load-on-startup>1</load-on-startup>
+		</servlet>
+		<servlet-mapping>
+			<servlet-name>SpringMVC</servlet-name>
+			<url-pattern>*.action</url-pattern>
+		</servlet-mapping>
+
+
+		注意:
+			配置文件在WEB-INF下:
+			<param-value>/WEB-INF/spring-web-mvc.xml</param-value>
+			配置文件在classpath下:
+			<param-value>classpath:spring-web-mvc.xml</param-value>
+
+		注意:
+			<url-pattern>*.action</url-pattern>
+			也可以配置成
+			<url-pattern>/</url-pattern>
+
+			注意:这里是/ 不是/*,后面会说明它们之间的区别
+
+	4)编写Controller控制器(headler)
+		Controller控制器,是MVC中的部分C,因为此处的控制器主要负责功能处理部分：
+		1、收集、验证请求参数并封装到对象上；
+		2、将对象交给业务层,由业务对象处理并返回模型数据；
+		3、返回ModelAndView(Model部分是业务层返回的模型数据,视图部分为逻辑视图名)。
+
+		前端控制器(DispatcherServlet)主要负责整体的控制流程的调度部分：
+		1、负责将请求委托给控制器进行处理；
+		2、根据控制器返回的逻辑视图名选择具体的视图进行渲染(并把模型数据传入)。
+		因此MVC中完整的C(包含控制逻辑+功能处理)由(DispatcherServlet + Controller)组成。
+
+		Controller接口中只有一个需要实现的方法就是handleRequest方法,方法中接收两个参数,分别对应Servlet对象中的request,response对象。可以从request中获取客户端提交过来的请求参数。
+		返回值ModelAndView,既包含要返回给客户端浏览器的逻辑视图又包含要对视图进行渲染的数据模型。
+
+		例如:
+		import org.springframework.web.servlet.mvc.Controller;
+
+		public class HelloWorldController implements Controller{
+			@Override
+			public ModelAndView handleRequest(HttpServletRequest request, HttpServletResponse response) throws Exception {
+				String name = request.getParameter("name");
+				//ModelAndView对象中包括了要返回的逻辑视图,以及数据模型
+				ModelAndView mv = new ModelAndView();
+				//设置逻辑视图名称
+				mv.setViewName("hello");
+				//设置数据模型
+				mv.addObject("name", name);
+
+				return mv;
+			}
+		}
+
+	5)配置映射器(可省去,有默认配置)
+		注意:如果xml文件不能自动提示,那么可以在Eclipse中把schame配置过来即可,schame文件也在下载的spring的压缩包中
+		Spring容器需要根据映射器来将用户提交的请求url和后台Controller/Handler进行绑定,所以需要配置映射器。
+		例如:
+		<bean class="org.springframework.web.servlet.handler.BeanNameUrlHandlerMapping"/>
+
+		BeanNameUrlHandlerMapping：表示将请求的URL和Bean名字映射,如URL为 "/hello",则Spring配置文件必须有一个名字为"/hello"的Bean.
+		注意:这里/代表的含义是url中项目名后面的/
+
+
+	6)配置适配器(可省去,有默认配置)
+		想要正确运行自定义处理器,需要配置处理器适配器,在spring的配置文件中(就是本例中的SpringMVC-servlet.xml),进行如下配置：
+
+		<bean class="org.springframework.web.servlet.mvc.SimpleControllerHandlerAdapter"/>
+
+		SimpleControllerHandlerAdapter：表示所有实现了org.springframework.web.servlet.mvc.Controller接口的Bean可以作为SpringMVC中的处理器。如果需要其他类型的处理器可以通过实现HadlerAdapter来解决。
+
+
+	7)配置视图解析器(可省去,有默认配置,但是前缀和后缀都为"")
+		当处理器执行完成后,返回给spring容器一个ModelAndView对象,这个对象需要能够被解析成与之相对应的视图,并且使用返回的Model数据对视图进行渲染。
+
+		<bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+			<property name="viewClass" value="org.springframework.web.servlet.view.JstlView"/>
+			<property name="prefix" value="/WEB-INF/jsp/"/>
+			<property name="suffix" value=".jsp"/>
+		</bean>
+
+		如果配置设置为如上操作,那么在自定义的Handler中返回的逻辑视图的名字不能有后缀.jsp,并且具体页面一定放在/WEB-INF目录下。
+
+		InternalResourceViewResolver：用于支持Servlet、JSP视图解析；
+		viewClass：JstlView表示JSP模板页面需要使用JSTL标签库,classpath中必须包含jstl的相关jar包；
+		prefix和suffix：视图页面的前缀和后缀(前缀+逻辑视图名+后缀),比如传进来的逻辑视图名为hello,则该该jsp视图页面应该存放在"WEB-INF/jsp/hello.jsp"
+
+		注意:放在WEB-INF下的页面,只能通过内部跳转的方式访问到,因为客户端访问不到WEB-INF目录,而且服务器端可以访问到WEB-INF目录
+		注意:需要引入jstl相关jar包
+		注意:页面中的路径问题
+			 <%
+				String path = request.getContextPath();
+				String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.getServerPort()+path+"/";
+			 %>
+
+			 <base href="<%=basePath%>" />
+
+	8)配置处理器
+		把编写好的handler/controller在spring中进配置,让其接受Spring IoC容器管理
+		<bean name="/hello.action" class="com.briup.web.controller.HelloWorldController"/>
+
+
+
+	注意: 对于Spring配置文件中的处理器适配器,处理器映射器,都可以省去不写,springMVC框架中会有默认配置的,视图解析器也可以不配置,因为在org.springframework.web.servlet.DispatcherServlet这个类的同包下,有一个DispatcherServlet.properties文件,里面就是SpringMVC默认的配置,是当用户的Spring配置文件中没有指定配置时使用的默认策略(你不配置那么用户默认的,你配置了,那么就使用你的配置)
+
+	从默认的配置中可以看出DispatcherServlet在启动时会自动注册这些特殊的Bean,无需我们注册,如果我们注册了,默认的将不会注册。
+
+	因此之前的BeanNameUrlHandlerMapping、SimpleControllerHandlerAdapter是不需要注册的,DispatcherServlet默认会注册这两个Bean。
+
+
+	整个访问的流程:
+	1、  首先用户发送请求,前端控制器DispatcherServlet收到请求后自己不进行处理，而是委托给其他的解析器进行处理，前端控制器作为统一访问点，进行全局的流程控制；
+	2、  DispatcherServlet把请求转交给HandlerMapping， HandlerMapping将会把请求映射为HandlerExecutionChain对象(包含一个Handler处理器对象、多个HandlerInterceptor拦截器)对象.(后面会学习到拦截器)
+	3、  DispatcherServlet再把请求转交给HandlerAdapter，HandlerAdapter将会把处理器包装为适配器，从而支持多种类型的处理器(适配器模式).简单点说就是让我们知道接下来应该调用Handler处理器里面的什么方法
+	4、  HandlerAdapter将会根据适配的结果调用真正的处理器的功能处理方法，完成功能处理；并返回一个ModelAndView对象（包含模型数据、逻辑视图名）；
+	5、  ModelAndView的逻辑视图名交给ViewResolver解析器， ViewResolver解析器把逻辑视图名解析为具体的View，通过这种策略模式，很容易更换其他视图技术；
+	6、  View会根据传进来的Model模型数据进行渲染，此处的Model实际是一个Map数据结构，因此很容易支持其他视图技术；
+	7、最后返回到DispatcherServlet，由DispatcherServlet返回响应给用户，到此一个流程结束。
+
+
+
+4.DispatcherServlet中的映射路径
+	<servlet>
+		<servlet-name>SpringMVC</servlet-name>
+		<servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+		<load-on-startup>1</load-on-startup>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>SpringMVC</servlet-name>
+		<url-pattern>/</url-pattern>
+	</servlet-mapping>
+
+	1)拦截所有请求
+		<url-pattern>/</url-pattern>
+		此处需要特别强调的是,配置中使用的是/,而不是/*,如果使用/*,那么请求时可以通过DispatcherServlet转发到相应的Controller中,但是Controller返回的时候,如返回的jsp还会再次被拦截,这样导致404错误,即访问不到jsp。
+
+		拦截/,例如：/user/add
+		将来可以实现REST风格的访问
+		弊端：会导致静态文件（jpg,js,css）被拦截后不能正常显示。
+
+		拦截/*,请求可以走到Controller中,但跳转到jsp时再次被拦截,不能访问到jsp,可以说这是错误的配置。
+
+	2)自定义拦截请求的后缀名
+		拦截*.do、*.html、*.action, 例如/user/add.do
+		这是最传统的方式,最简单也最实用。不会导致静态文件（jpg,js,css）被拦截。
+
+		弊端:
+			Controller的后缀只能固定成某一个
+			将来不便于实现REST风格的访问
+
+	3)静态资源的访问,如jpg,js,css
+		如果DispatcherServlet拦截"*.do"这样的有后缀的URL,就不存在访问不到静态资源的问题。
+	　　如果DispatcherServlet拦截"/",为了实现REST风格,拦截了所有的请求,那么同时对*.js,*.jpg等静态文件的访问也就被拦截了。
+		例如:
+		<link href="static/css/hello.css" rel="stylesheet" type="text/css"/>
+		<script type="text/javascript" src="static/js/hello.js"></script>
+		<img alt="none" src="static/images/logo.png">
+
+		解决方式一：利用Tomcat的defaultServlet来处理静态文件
+		<servlet-mapping>
+			<servlet-name>default</servlet-name>
+			<url-pattern>*.jpg</url-pattern>
+		</servlet-mapping>
+
+		<servlet-mapping>
+			<servlet-name>default</servlet-name>
+			<url-pattern>*.js</url-pattern>
+		</servlet-mapping>
+
+		<servlet-mapping>
+			<servlet-name>default</servlet-name>
+			<url-pattern>*.css</url-pattern>
+		</servlet-mapping>
+
+		或者:
+		<servlet-mapping>
+			<servlet-name>default</servlet-name>
+			<url-pattern>*.css</url-pattern>
+			<url-pattern>*.js</url-pattern>
+			<url-pattern>*.png</url-pattern>
+		</servlet-mapping>
+
+		特点：1.要配置多个，每种文件配置一个。
+		　　  2.要写在DispatcherServlet的前面(和tomcat版本有关),让defaultServlet先拦截请求,	这样请求就不会进入Spring了
+		　　  3. 高性能。
+
+
+		解决方式二: 使用<mvc:resources>标签,例如:
+		<mvc:resources mapping="/images/**" location="/images/"/>
+		<mvc:resources mapping="/js/**" location="/js/"/>
+		<mvc:resources mapping="/css/**" location="/css/"/>
+
+		mapping： 映射
+		两个*,表示映射指定路径下所有的URL,包括子路径
+		location：本地资源路径
+
+		这样如果有访问/images或者/js或者/css路径下面的资源的时候,spring就不会拦截了
+
+
+		解决方式三: 使用<mvc:default-servlet-handler/>标签
+		在spring配置文件中加入此标签配置即可
+
+
+5.spring提供的编码过滤器
+	查看这个过滤器类源码便可知这里所传的俩个参数的作用
+	<filter>
+		<filter-name>CharacterEncodingFilter</filter-name>
+		<filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
+		<init-param>
+			<param-name>encoding</param-name>
+			<param-value>UTF-8</param-value>
+		</init-param>
+		<init-param>
+			<param-name>forceEncoding</param-name>
+			<param-value>true</param-value>
+		</init-param>
+	</filter>
+	<filter-mapping>
+		<filter-name>CharacterEncodingFilter</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
+
+-------------------------------------------------------------------------------------------------------------------------------------
+
+1.Controller接口及其实现类
+	Controller是控制器/处理器接口,此处只有一个方法handleRequest,用于进行请求的功能处理(功能处理方法),处理完请求后返回ModelAndView对象(Model模型数据部分 和 View视图部分)。
+
+	如果想直接在处理器/控制器里使用response向客户端写回数据,可以通过返回null来告诉DispatcherServlet我们已经写出响应了,不需要它进行视图解析
+
+	Spring默认提供了一些Controller接口的实现类以方便我们使用,在Eclipse中选择Controller接口然后右键open type Hierarchy即可查看该接口的实现类,每个实现类都有自己特殊的功能,这里以实现类AbstractController为例简单介绍下。
+	查看AbstractController类中代码可知,我们写一个Controller的时候可以继承AbstractController然后实现handleRequestInternal方法即可。
+
+
+	提供了【可选】的会话(session)的串行化访问功能,例如:
+	//即同一会话,线程同步
+	public class HelloWorldController extends AbstractController{
+		@Override
+		protected ModelAndView handleRequestInternal(HttpServletRequest request, HttpServletResponse response)
+				throws Exception {
+
+			String name = request.getParameter("name");
+
+			//ModelAndView对象中包括了要返回的逻辑视图,以及数据模型
+			ModelAndView mv = new ModelAndView();
+			//设置视图名称,可以是字符串 也可以是视图对象
+			mv.setViewName("hello");
+			//设置数据模型
+			mv.addObject("name", name);
+
+			return mv;
+		}
+
+
+	}
+
+	<bean name="/hello" class="com.briup.web.controller.HelloWorldController">
+		<property name="synchronizeOnSession" value="true"></property>
+	</bean>
+
+
+
+	直接通过response写响应,例如:
+	public class HelloWorldController extends AbstractController{
+		@Override
+		protected ModelAndView handleRequestInternal(HttpServletRequest request, HttpServletResponse response)
+				throws Exception {
+
+			response.getWriter().write("Hello World!!");
+			//如果想直接在该处理器/控制器写响应 可以通过返回null告诉DispatcherServlet自己已经写出响应了,不需要它进行视图解析
+			return null;
+		}
+
+	}
+
+
+	强制请求方法类型,例如:
+	//只支持post和get方法
+	<bean name="/hello" class="com.briup.web.controller.HelloWorldController">
+		<property name="supportedMethods" value="POST,GET"></property>
+	</bean>
+
+
+	当前请求的session前置条件检查,如果当前请求无session将抛出HttpSessionRequiredException异常,例如:
+	//在进入该控制器时[前],一定要有session存在,否则抛出HttpSessionRequiredException异常。
+
+	<bean name="/hello" class="com.briup.web.controller.HelloWorldController">
+		<property name="requireSession" value="true"/>
+	</bean>
+
+
+2.自定义适配器
+	一般情况下,springMVCSimpleControllerHandlerAdapter会是我们常用的适配器,也是SpringMVC中默认的适配器,该适配器中的主要代码如下:
+	public class SimpleControllerHandlerAdapter implements HandlerAdapter {
+		public boolean supports(Object handler) {
+			return (handler instanceof Controller);
+		}
+		public ModelAndView handle(HttpServletRequest request, HttpServletResponse response, Object handler)
+				throws Exception {
+
+			return ((Controller) handler).handleRequest(request, response);
+		}
+	}
+	从代码中可以看出,它首先会判断我们的handler是否实现了Controller接口,如果实现了,那么会调用Controller接口中的handleRequest方法
+
+	那么根据这种方式能看出,我们也可以有自己的适配器的实现,那么就可以让任意类成为SpringMVC中的handler了,无论我们的类是否实现了Controller接口
+
+	例如:
+		自己的接口:
+		public interface MyHandler {
+			public ModelAndView handler_test(HttpServletRequest request, HttpServletResponse response)throws Exception;
+		}
+		自己的适配器:
+		public class MyHandlerAdapter implements HandlerAdapter{
+			@Override
+			public boolean supports(Object handler) {
+				return (handler instanceof MyHandler);
+			}
+
+			@Override
+			public ModelAndView handle(HttpServletRequest request, HttpServletResponse response, Object handler)
+					throws Exception {
+				return ((MyHandler)handler).handler_test(request, response);
+			}
+
+			@Override
+			public long getLastModified(HttpServletRequest request, Object handler) {
+				return -1L;
+			}
+
+		}
+
+		自己的hander:(就是我们之前写的Controller)
+		public class TestController implements MyHandler{
+			@Override
+			public ModelAndView handler_test(HttpServletRequest request, HttpServletResponse response) throws Exception {
+				String name = request.getParameter("name");
+				ModelAndView mv = new ModelAndView("hello");
+				mv.addObject("name", name);
+				return mv;
+			}
+		}
+
+		最后在spring的配置中把我们的适配器进行配置即可正常使用.适配器配置多个，从上到下适配
+
+
+
+3.处理器拦截器/控制器拦截器
+	SpringMVC的处理器拦截器类似于Servlet 开发中的过滤器Filter,用于对处理器进行预处理和后处理。
+	1)常见应用场景
+		1、日志记录
+		2、权限检查
+		3、性能监控
+		4、通用行为 例如读取用户cookie
+		等
+	2)拦截器接口
+		public interface HandlerInterceptor {
+			boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)throws Exception;
+
+			void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView)throws Exception;
+
+			void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex)throws Exception;
+		}
+
+		preHandle方法
+			预处理回调方法,实现处理器的预处理,第三个参数为的处理器(本次请求要访问的那个Controller)
+			返回值:true表示继续流程(如调有下一个拦截器或处理器)
+			false表示流程中断(如登录检查失败),不会继续调用其他的拦截器或处理器,此时我们需要通过response来产生响应
+
+		postHandle方法
+			后处理回调方法,实现处理器的后处理(但在渲染视图之前),此时我们可以通过modelAndView对模型数据进行处理或对视图进行处理,modelAndView也可能为null。
+
+		afterCompletion方法
+			整个请求处理完毕回调方法,即在视图渲染完毕时回调
+
+	3)拦截器适配器
+		有时候我们可能只需要实现三个回调方法中的某一个,如果实现HandlerInterceptor 接口的话,三个方法必须实现,不管你需不需要,此时spring 提供了一个HandlerInterceptorAdapter 适配器(适配器模式),允许我们只实现需要的回调方法。
+		在HandlerInterceptorAdapter中,对HandlerInterceptor 接口中的三个方法都进行了空实现,其中preHandle方法的返回值,默认是true
+
+	4)测试一个拦截器
+		拦截器代码:
+		public class MyInterceptor1 extends HandlerInterceptorAdapter{
+			@Override
+			public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
+					throws Exception {
+				System.out.println("MyInterceptor1 preHandle");
+				return true;
+			}
+			@Override
+			public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler,
+					ModelAndView modelAndView) throws Exception {
+				System.out.println("MyInterceptor1 postHandle");
+			}
+			@Override
+			public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex)
+					throws Exception {
+				System.out.println("MyInterceptor1 afterCompletion");
+			}
+		}
+
+		配置文件:(注意此配置在文件中的配置顺序,要写在配置文件的上面)
+		<bean name="handlerInterceptor1" class="com.briup.web.interceptor.MyInterceptor1"/>
+
+		<bean class="org.springframework.web.servlet.handler.BeanNameUrlHandlerMapping">
+			<property name="interceptors">
+				<list>
+					<ref bean="handlerInterceptor1"/>
+				</list>
+			</property>
+		</bean>
+
+		访问一个测试的Controller查看结果:
+		MyInterceptor1 preHandle
+		TestController执行
+		MyInterceptor1 postHandle
+		MyInterceptor1 afterCompletion
+
+	5)测试俩个拦截器
+		俩个拦截器的代码和上面类似,只是每个输出的内容不同
+		配置文件:
+		<bean name="handlerInterceptor1" class="com.briup.web.interceptor.MyInterceptor1"/>
+		<bean name="handlerInterceptor2" class="com.briup.web.interceptor.MyInterceptor2"/>
+
+		<bean class="org.springframework.web.servlet.handler.BeanNameUrlHandlerMapping">
+			<property name="interceptors">
+				<list>
+					<ref bean="handlerInterceptor1"/>
+					<ref bean="handlerInterceptor2"/>
+				</list>
+			</property>
+		</bean>
+
+		访问一个测试的Controller查看结果:
+		MyInterceptor1 preHandle
+		MyInterceptor2 preHandle
+		TestController执行
+		MyInterceptor2 postHandle
+		MyInterceptor1 postHandle
+		MyInterceptor2 afterCompletion
+		MyInterceptor1 afterCompletion
+
+		注意:<list>标签中引用拦截器的顺序会影响结果输出的顺序
+
+
+	6)如果Controller等采用的注解配置,那么拦截器需要mvc标签进行配置
+		注意:每个<mvc:interceptor>只能配置一个拦截器
+		<mvc:interceptors>
+			<mvc:interceptor>
+				<mvc:mapping path="/**"/>
+				<ref bean="handlerInterceptor1"/>
+			</mvc:interceptor>
+		</mvc:interceptors>
+
+		例如1: 注意/*和/**的区别
+		<!--
+        /**的意思是所有文件夹及里面的子文件夹
+        /*是所有文件夹，不含子文件夹
+        /是web项目的根目录
+        -->
+		<mvc:interceptors>
+			<!-- 下面所有的mvc映射路径都会被这个拦截器拦截 -->
+			<bean class="com.briup.web.interceptor.MyInterceptor1" />
+
+			<mvc:interceptor>
+				<mapping path="/**"/>
+				<exclude-mapping path="/admin/**"/>
+				<bean class="com.briup.web.interceptor.MyInterceptor2" />
+			</mvc:interceptor>
+			<mvc:interceptor>
+				<mapping path="/secure/*"/>
+				<bean class="com.briup.web.interceptor.MyInterceptor3" />
+			</mvc:interceptor>
+		</mvc:interceptors>
+
+
+	7)拦截器是单例
+		因此不管多少用户请求多少次都只有一个拦截器实现,即线程不安全。
+		所以在必要时可以在拦截器中使用ThreadLocal,它是和线程绑定,一个线程一个ThreadLocal,A 线程的ThreadLocal只能看到A线程的ThreadLocal,不能看到B线程的ThreadLocal。
+
+	8)记录执行Controller所用时间
+		public class TimeInterceptor extends HandlerInterceptorAdapter{
+			//拦截器是单例,不是线程安全的,所以这里使用ThreadLocal
+			private ThreadLocal<Long> local = new ThreadLocal<>();
+
+			@Override
+			public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
+					throws Exception {
+				long start = System.currentTimeMillis();
+				local.set(start);
+				return true;
+			}
+			@Override
+			public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex)
+					throws Exception {
+				long end = System.currentTimeMillis();
+				System.out.println("共耗时:"+(end-local.get()));
+			}
+		}
+
+
+	9)登录检查
+		public class LoginInterceptor extends HandlerInterceptorAdapter{
+			@Override
+			public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
+					throws Exception {
+				//请求到登录页面放行
+				if(request.getServletPath().startsWith("/login")) {
+					return true;
+				}
+
+				//如果用户已经登录放行
+				if(request.getSession().getAttribute("username") != null) {
+					return true;
+				}
+
+				//其他没有登录的情况则重定向到登录页面
+				response.sendRedirect(request.getContextPath() + "/login");
+
+				return false;
+			}
+		}
+
+
+	注意:推荐能使用servlet规范中的过滤器Filter实现的功能就用Filter实现,因为HandlerInteceptor只有在SpringWebMVC环境下才能使用,因此Filter是最通用的、最先应该使用的。
+
+
+
+4.基于注解的SpringMVC
+
+	1)用于支持注解的配置
+		使用基于注解的配置可以省略很多操作,更方便。我们之前所看到的所有的xml配置,如果替换成基于注解只需要在spring的xml文件中做如下配置:
+		<mvc:annotation-driven/>
+
+		在Spring中,
+		处理器类可以使用   @Controller注解
+		业务逻辑层可以使用 @Service注解
+		数据持久层可以使用 @Repository注解
+
+		如果在处理器上使用 @Controller注解,那么还需要在配置文件中指定哪个包下面的类使用了该注解:
+		<context:component-scan base-package="com.briup.web.controller"></context:component-scan>
+
+
+	2)基于注解的Controller
+		使用注解后,就不需要再实现特定的接口,任意一个javaBean对象都可以当做处理器对象,对象中任意一个方法都可以作为处理器方法。
+		只需
+			在类上加上 @Controller注解
+			方法上加上 @RequestMapping注解
+		即可
+
+		例如:
+		web.xml中:
+		<servlet>
+			<servlet-name>SpringMVC</servlet-name>
+			<servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+			<init-param>
+				<param-name>contextConfigLocation</param-name>
+				<param-value>classpath:spring-web-mvc.xml</param-value>
+			</init-param>
+			<load-on-startup>1</load-on-startup>
+		</servlet>
+		<servlet-mapping>
+			<servlet-name>SpringMVC</servlet-name>
+			<url-pattern>/</url-pattern>
+		</servlet-mapping>
+
+
+		src下面的spring-web-mvc.xml中:
+		<mvc:annotation-driven/>
+		<context:component-scan base-package="com.briup.web.controller"></context:component-scan>
+
+		<bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+			<property name="viewClass" value="org.springframework.web.servlet.view.JstlView"/>
+			<property name="prefix" value="/WEB-INF/jsp/"/>
+			<property name="suffix" value=".jsp"/>
+		</bean>
+
+
+		自定义的Controller中:
+		@Controller
+		public class HomeController {
+			@RequestMapping("/home")
+			public ModelAndView home(){
+				ModelAndView mv = new ModelAndView("index");
+				return mv;
+			}
+		}
+
+
+		如上代码,使用 @Controller表明HomeController类是一个处理器类,通过 @RequestMapping("/home")表明当url请求名为/home时,调用home方法执行处理,当处理完成之后返回ModelAndView对象。因为在spring-web-mvc.xml中配置了视图解析器的前缀和后缀,所以最后视图home.jsp被返回
+
+
+	3)基于注解的Controller的返回值
+		1.返回ModelAndView,和之前一样
+
+		2.返回String,表示跳转的逻辑视图名字,模型可以通过参数传过来
+			@Controller
+			public class HomeController {
+				@RequestMapping("/home")
+				public String home(Model model){
+					model.addAttribute("msg", "hello world");
+					return "index";
+				}
+			}
+
+		3.声明返回类型为void
+			可以通过参数获取request和response，分别使用服务器内部跳转和重定向，自己来决定要跳转的位置。
+			@Controller
+			public class HomeController {
+				@RequestMapping("/home")
+				public void home(HttpServletRequest request,HttpServletResponse response){
+					String username = request.getParameter("username");
+					response.setContentType("text/html;charset=utf-8");
+					response.getWriter().write("hello world! "+username);
+					//或者使用servlet的方式进行跳转/重定向
+
+				}
+			}
+
+
+
+5.Spring2.5中引入注解对处理器(handler)支持
+	@Controller
+		用于标识是处理器类；
+	@RequestMapping
+		请求到处理器功能方法的映射规则；
+	@RequestParam
+		请求参数到处理器功能处理方法的方法参数上的绑定；
+	@ModelAttribute
+		请求参数到命令对象的绑定；
+	@SessionAttributes
+		用于声明session 级别存储的属性,放置在处理器类上,通常列出模型属性(如@ModelAttribute)对应的名称,则这些属性会透明的保存到session 中
+	@InitBinder
+		自定义数据绑定注册支持,用于将请求参数转换到命令对象属性的对应类型；
+
+
+6.Spring3引入了更多的注解,其中包含了对RESTful架构风格的支持
+	@CookieValue
+		cookie数据到处理器功能处理方法的方法参数上的绑定；
+	@RequestHeader
+		请求头数据到处理器功能处理方法的方法参数上的绑定；
+	@RequestBody
+		请求的body体的绑定
+	@ResponseBody
+		处理器功能处理方法的返回值作为响应体
+	@ResponseStatus
+		定义处理器功能处理方法/异常处理器返回的状态码和原因；
+	@ExceptionHandler
+		注解式声明异常处理器；
+	@PathVariable
+		请求URI 中的模板变量部分到处理器功能处理方法的方法参数上的绑定,从而支持RESTful架构风格的URI；
+
+		findUser.action?groupId=1&userId=3
+		get   group/1/user/3   1,3 查找
+		public void find(){...}
+		delete  group/1/user/3   1,3 删除
+		public void delete(){...}
+get post put delete
+
+7.Spring3中引入的mvc命名空间
+	mvc这个命名空间是在Spring3中引入的,其作用是用来支持mvc的配置
+	需要在<beans>中声明出这个命名空间及其对应的schemaLocation中的值
+	<mvc:annotation-driven>
+		自动注册基于注解风格的映射器和适配器:
+		在spring2.5中是DefaultAnnotationHandlerMapping和AnnotationMethodHandlerAdapter
+
+		在spring3中是RequestMappingHandlerMapping和RequestMappingHandlerAdapter.
+		同时还支持各种数据的转换器.
+
+	<mvc:interceptors>
+		配置自定义的处理器拦截器,例如:
+		<mvc:interceptors>
+			<mvc:interceptor>
+				<mvc:mapping path="/**"/>
+				<ref bean="handlerInterceptor1"/>
+			</mvc:interceptor>
+		</mvc:interceptors>
+
+	<mvc:view-controller>
+		收到相应请求后直接选择相应的视图,例如:
+		<mvc:view-controller path="/hello" view-name="test"></mvc:view-controller>
+
+	<mvc:resources>
+		逻辑静态资源路径到物理静态资源路径的对应.例如:
+		<mvc:resources mapping="/images/**" location="/images/"/>
+		<mvc:resources mapping="/js/**" location="/js/"/>
+		<mvc:resources mapping="/css/**" location="/css/"/>
+
+	<mvc:default-servlet-handler>
+		当在web.xml中DispatcherServlet使用<url-pattern>/</url-pattern> 映射的时候,会静态资源也映射了,如果配置了这个mvc标签,那么再访问静态资源的时候就转交给默认的Servlet来响应静态文件,否则报404 找不到静态资源错误。
+
+
+
+8.@Controller和@RequestMapping注解
+	1)声明处理器
+	@Controller
+	public class HelloWorldController {
+
+	}
+
+	2)映射处理器中的【功能处理方法】
+	@Controller
+	public class HelloWorldController {
+		@RequestMapping("/home")
+		public ModelAndView home(){
+			ModelAndView mv = new ModelAndView("index");
+			return mv;
+		}
+	}
+
+	表明该方法映射的url路径为/home
+
+	3)@RequestMapping也可以写在处理器类上
+	@RequestMapping("/test")
+	@Controller
+	public class HomeController {
+		@RequestMapping("/home")
+		public ModelAndView home(){
+			ModelAndView mv = new ModelAndView("index");
+			return mv;
+		}
+	}
+	表明该方法映射的url路径为/test/home
+
+
+9.请求映射
+	假设浏览器发送了一个请求如下:
+	-------------------------------
+	POST /login	HTTP1.1
+	Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+	Accept-Encoding: gzip, deflate
+	Accept-Language: zh-CN,en;q=0.8,zh;q=0.5,en-US;q=0.3
+	Connection: keep-alive
+	Cookie: JSESSIONID=DBC6367DEB1C024A836F3EA35FCFD5A2
+	Host: 127.0.0.1:8989
+	Upgrade-Insecure-Requests: 1
+	User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:49.0) Gecko/20100101 Firefox/49.0
+
+	username=tom&password=123
+	--------------------------------
+
+
+	http协议的请求格式如下:
+	---------------------------------
+	请求方法 URL 协议版本号
+	请求头信息
+	请求头信息
+	请求头信息
+	..
+	回车换行
+	请求正文
+	---------------------------------
+
+
+	从格式中我们可以看到【请求方法、URL、请求头信息、请求正文】这四部分一般是可变的,因此我们可以把请求中的这些信息在处理器的【功能处理方法】中进行的映射,因此请求的映射分为如下几种:
+		URL路径映射
+			使用URL映射到处理器的功能处理方法；
+		请求方法映射限定
+			例如限定功能处理方法只处理GET请求；
+		请求参数映射限定
+			例如限定只处理包含username参数的请求；
+		请求头映射限定
+			例如限定只处理"Accept=application/json"的请求。
+
+
+10.URL路径映射
+	1)普通URL路径映射
+		@RequestMapping(value="/test")
+		@RequestMapping("/hello")
+			注解中只出现一个参数且参数名为value的话,可以将参数名去掉
+		@RequestMapping(value={"/test", "/user/hello"})
+			多个URL路径可以映射到同一个处理器的功能处理方法。
+
+	2)URI模板模式映射
+		@RequestMapping(value="/users/{userId}")
+			{XXX}占位符,得写， 请求的URL可以是"/users/123456"或"/users/abcd",之后可以通过@PathVariable可以提取URI模板模式中的{XXX}中的值
+		@RequestMapping(value="/users/{userId}/create")
+			这样也是可以的,请求的URL可以是"/users/123/create"
+		@RequestMapping(value="/users/{userId}/topics/{topicId}")
+			这样也是可以的,请求的URL可以是"/users/123/topics/123"
+
+	3)Ant风格的URL路径映射
+		@RequestMapping(value="/users/**")
+			可以匹配"/users/abc/abc",但"/users/123"将会被【URI模板模式映射中的"/users/{userId}"模式优先映射到】
+		@RequestMapping(value="/product/?")
+			可匹配"/product/1"或"/product/a",但不匹配"/product"或"/product/aa";
+			?代表有且只有一个字符
+		@RequestMapping(value="/product*")
+			可匹配"/productabc"或"/product",但不匹配"/productabc/abc";
+			*代表0~n个字符
+		@RequestMapping(value="/product/*")
+			可匹配"/product/abc",但不匹配"/productabc";
+		@RequestMapping(value="/products/**/{productId}")
+			可匹配"/products/abc/abc/123"或"/products/123",也就是Ant风格和URI模板变量风格可混用;
+			**代表所有的子路径
+
+	4)正则表达式风格的URL路径映射
+		从Spring3.0 开始支持正则表达式风格的URL路径映射,格式为{变量名:正则表达式},之后通过@PathVariable可以提取{XXX:正则表达式匹配的值}中的XXX这个变量的值。
+
+		@RequestMapping(value="/products/{categoryCode:\\d+}-{pageNumber:\\d+}")
+			可以匹配"/products/123-1",但不能匹配"/products/abc-1",这样可以设计更加严格的规则。
+		@RequestMapping(value="/user/{userId:^\\d{4}-[a-z]{2}$}")
+			可以匹配"/user/1234-ab"
+
+		注意:\d表示数字,但是\在java的字符串中是特殊字符,所以需要再加一个\进行转义即可
+		(参照之前js的学习文档,和java的正则几乎一致,js正则中的一个/变为java中的俩个/即可)
+			括号:
+				[abc] 	查找方括号之间的任何字符。
+				[^abc] 	查找任何不在方括号之间的字符。
+				[0-9] 	查找任何从 0 至 9 的数字。
+				[a-z] 	查找任何从小写 a 到小写 z 的字符。
+				[A-Z] 	查找任何从大写 A 到大写 Z 的字符。
+				[A-z] 	查找任何从大写 A 到小写 z 的字符。
+				(red|blue|green) 	查找任何指定的选项。
+
+			元字符:
+				. 	查找单个任意字符,除了换行和行结束符.如果要表示.这个字符,需要转义
+				\w 	查找单词字符。     字母 数字 _
+				\W 	查找非单词字符。非 字母 数字 _
+				\d 	查找数字。
+				\D 	查找非数字字符。
+				\s 	查找空白字符。
+				\S 	查找非空白字符。
+				\b 	匹配单词边界。
+				\B 	匹配非单词边界。
+				\0 	查找 NUL 字符。
+				\n 	查找换行符。
+				\f 	查找换页符。
+				\r 	查找回车符。
+				\t 	查找制表符。
+				\v 	查找垂直制表符。
+
+			量词:
+				n+ 		匹配任何包含至少一个 n 的字符串。
+				n* 		匹配任何包含零个或多个 n 的字符串。
+				n? 		匹配任何包含零个或一个 n 的字符串。
+				n{X} 	匹配包含 X 个 n 的序列的字符串。
+				n{X,Y} 	匹配包含 X 到 Y 个 n 的序列的字符串。
+				n{X,} 	匹配包含至少 X 个 n 的序列的字符串。
+				n$ 		匹配任何结尾为 n 的字符串。
+				^n 		匹配任何开头为 n 的字符串。
+				?=n 	匹配任何其后紧接指定字符串 n 的字符串。
+				?!n 	匹配任何其后没有紧接指定字符串 n 的字符串。
+
+
+		正则表达式风格的URL路径映射是一种特殊的URI模板模式映射
+		URI模板模式映射不能指定模板变量的数据类型,如是数字还是字符串；
+		正则表达式风格的URL路径映射,可以指定模板变量的数据类型,可以将规则写的相当复杂。
+
+11.请求方法映射限定
+	一般获取数据为GET请求方法,提交表单一般为POST请求方法。但之前URL路径映射方式对任意请求方法都是接受的,因此我们需要某种方式来告诉相应的功能处理方法只处理如GET方式的请求或POST方式的请求。
+
+	@RequestMapping(value="/user/{userId:\\d+}",method=RequestMethod.GET)
+		可以匹配"/user/100",并且请求方式只能是GET
+
+	@RequestMapping(value="/hello", method={RequestMethod.POST,RequestMethod.GET})
+		可以匹配"/hello",并且请求方式只能是POST或者GET
+
+    @RequestMapping(value="/register",method={RequestMethod.POST})
+	public String doPost(String name){
+		System.out.println("name = "+name);
+		System.out.println("注册成功");
+		return "success";
+	}
+	@RequestMapping(value="/register",method={RequestMethod.GET})
+	public String doGet(){
+		return "register";
+	}
+
+	注意:
+	1、一般浏览器只支持GET、POST请求方法,如想浏览器支持PUT、DELETE 等请求方法只能模拟。(jquery中的ajax函数可以发送这些方式的请求)
+	2、除了GET、POST,还有HEAD、OPTIONS、PUT、DELETE、TRACE(观察servlet源码也可获知)
+	3、DispatcherServlet默认开启对GET、POST、PUT、DELETE、HEAD 的支持；
+	4、如果需要支持OPTIONS、TRACE,请添加DispatcherServlet 在web.xml 的初始化参数:dispatchOptionsRequest 和
+	dispatchTraceRequest 为true。(查看源码,在DispatcherServlet的父类中可以找到这个俩个属性)
+
+12.请求参数映射限定
+   	1)请求数据中有指定参数名
+   	@RequestMapping("/test")
+   	@Controller
+   	public class HomeController {
+   		@RequestMapping(params="create",method=RequestMethod.GET)
+   		public ModelAndView test1(){
+
+   			return null;
+   		}
+   		@RequestMapping(params="create",method=RequestMethod.POST)
+   		public ModelAndView test2(){
+
+   			return null;
+   		}
+   	}
+
+   	可以匹配的路径为:/test?create
+   	如果是get 方式的请求则访问test1方法
+   	如果是post方式的请求则访问test2方法
+
+
+   	2)请求数据中没有指定参数名
+   	@RequestMapping(params="!create", method=RequestMethod.GET)
+
+
+   	3)请求数据中指定参数名=值
+   	@RequestMapping(params="username=tom")
+
+
+   	4)请求数据中指定参数名!=值
+   	username参数名可以不出现,但是如果出现了,那么参数值一定不能等于tom
+   	@RequestMapping(params="username!=tom")
+
+   	5)组合使用是"且"的关系
+   	@RequestMapping(params={"create","username=tom"})
