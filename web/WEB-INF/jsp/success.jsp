@@ -12,5 +12,13 @@
 </head>
 <body>
     注册成功
+${requestScope.name}
+${sessionScope.sessionName}
+
+${user}
+
+${requestScope.a}
+${requestScope.b}
+${requestScope.c}
 </body>
 </html>
